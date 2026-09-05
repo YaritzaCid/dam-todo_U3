@@ -38,10 +38,19 @@ Alisto es una app Expo / React Native con TypeScript para gestionar tareas priva
 │   ├── todo-location.ts         # GPS actual, fallback last-known y mensajes de error
 │   └── validation-schemas.ts    # Validaciones de login, registro y tareas
 ├── __tests__/
-│   ├── alisto-sync-test.ts      # Sync MockAPI, JSONPlaceholder y deduplicación
-│   ├── remote-todo-api-test.ts  # Cliente API, errores HTTP/red/timeout/datos
-│   ├── todo-camera-test.ts      # Cámara y persistencia de foto
-│   └── todo-location-test.ts    # GPS válido, fallback y error
+│   ├── alisto-db-native-auth-crud-test.ts # CRUD/auth nativo con SQLite mockeado
+│   ├── alisto-db-web-auth-crud-test.ts    # CRUD/auth web con localStorage mockeado
+│   ├── alisto-sync-test.ts                # Sync MockAPI, JSONPlaceholder y deduplicación
+│   ├── remote-todo-api-test.ts            # Cliente API, errores HTTP/red/timeout/datos
+│   ├── todo-camera-test.ts                # Cámara y persistencia de foto
+│   ├── todo-location-test.ts              # GPS válido, fallback y error
+│   └── validation-schemas-test.ts         # Login, registro y tareas con Zod
+├── e2e/
+│   ├── wdio.conf.ts            # WebdriverIO + Appium + UiAutomator2 para Android
+│   ├── tsconfig.json           # TypeScript de pruebas E2E
+│   ├── pageobjects/            # Page objects y selectores nativos Android
+│   └── specs/
+│       └── login.spec.ts       # Registro, login, creación y completado de tareas
 ├── scripts/
 │   └── reset-project.js         # Script starter para reiniciar la plantilla
 ├── .env.example                 # Plantilla versionable de configuración remota
@@ -60,7 +69,8 @@ Alisto es una app Expo / React Native con TypeScript para gestionar tareas priva
 - **Expo SQLite**: permite almacenar usuarios y tareas localmente, manteniendo la aplicación funcional sin conexión.
 - **MockAPI**: utilizado para almacenar y sincronizar tareas de forma remota mediante una API REST.
 - **JSONPlaceholder**: utilizado como API externa para importar tareas.
-- **Jest + jest-expo**: utilizados para las pruebas automatizadas de cámara, ubicación y APIs.
+- **Jest + jest-expo**: utilizados para las pruebas automatizadas unitarias/integración de cámara, ubicación, persistencia, validaciones y APIs.
+- **WebdriverIO + Appium + UiAutomator2**: utilizados para pruebas E2E Android sobre la app instalada.
 - **Bun**: utilizado para gestionar dependencias y ejecutar los comandos del proyecto.
 
 ## Decisiones técnicas
@@ -77,7 +87,7 @@ Alisto es una app Expo / React Native con TypeScript para gestionar tareas priva
 - **MockAPI**: `lib/remote-todo-api.ts` lee `process.env.EXPO_PUBLIC_REMOTE_TODOS_URL`; no hay URL hardcodeada en código.
 - **JSONPlaceholder**: importa desde `/todos`, limita a 5 elementos y deduplica por `jsonplaceholder:<id>`.
 - **Modo offline primero**: CRUD local no depende de red; sync remota es acción manual y sus errores no bloquean la app.
-- **Tests**: Jest + `jest-expo` cubren helpers de cámara, GPS, API remota y sync.
+- **Tests**: Jest + `jest-expo` cubren helpers, persistencia, validaciones, API remota y sync; Appium + WebdriverIO cubren flujos reales Android.
 
 ## Funcionalidad actual
 
@@ -162,8 +172,24 @@ EXPO_PUBLIC_REMOTE_TODOS_URL=<https://6a81d635400f94b23c6fac54.mockapi.io/api/v1
 
 ## Pruebas automatizadas
 
-El proyecto tiene 13 tests en 4 suites:
+El proyecto tiene pruebas unitarias/integración con Jest y pruebas E2E Android con Appium.
 
+### Jest
+
+La suite Jest actual tiene 50 tests en 7 suites:
+
+- Persistencia/auth nativa:
+  - SQLite mockeado;
+  - cuentas con contraseña hasheada;
+  - sesión, CRUD de tareas y separación por usuario.
+- Persistencia/auth web:
+  - `localStorage` mockeado;
+  - registro, login, sesión y CRUD por usuario.
+- Validaciones:
+  - login;
+  - registro;
+  - títulos de tareas;
+  - mensajes obligatorios en español.
 - Cámara:
   - captura válida;
   - captura sin URI/error;
@@ -172,7 +198,7 @@ El proyecto tiene 13 tests en 4 suites:
   - ubicación válida;
   - fallback a última ubicación conocida;
   - error cuando no hay ubicación.
-- API:
+- API y sincronización:
   - importación limitada a 5;
   - prevención de duplicados;
   - sincronización `POST`/`PUT`/`DELETE`;
@@ -180,7 +206,27 @@ El proyecto tiene 13 tests en 4 suites:
   - timeout/offline;
   - tarea eliminada no reinsertada.
 
-Los tests mockean `expo-camera`, `expo-location`, `expo-file-system`, `expo-crypto`, `expo-sqlite`, `fetch` y `localStorage`; no dependen de Internet ni emulador.
+Los tests mockean `expo-camera`, `expo-location`, `expo-file-system`, `expo-crypto`, `expo-sqlite`, `fetch` y `localStorage`; no dependen de Internet, Expo Go, emulador ni permisos reales.
+
+### E2E Android
+
+La suite E2E usa WebdriverIO, Appium 3 y el driver `uiautomator2` contra el paquete Android `com.alisto.app` y la activity `.MainActivity`.
+
+Casos Appium separados:
+
+1. `registra e inicia sesión correctamente`: abre registro, crea cuenta local, vuelve al login e inicia sesión.
+2. `crea una nueva tarea`: crea usuario único, entra al tablero y valida la tarea nueva como `PENDIENTE`.
+3. `marca una tarea como completada`: crea usuario único, crea una tarea y valida el cambio a `COMPLETADA`.
+
+Cada caso usa correo y título únicos. `beforeEach` y `afterEach` reinician la app y dejan la sesión cerrada para evitar dependencia accidental entre pruebas.
+
+Los selectores E2E no usan `id=...`; usan UiAutomator2 explícito:
+
+```ts
+android=new UiSelector().resourceId("auth_email_input")
+```
+
+Para tareas dinámicas se usa `UiScrollable` sobre `app_scroll_view` con `resourceIdMatches("^todo_.*_title_text$")`, porque los IDs incluyen el ID local de la tarea.
 
 ## Instrucciones de ejecución
 
@@ -189,6 +235,8 @@ Los tests mockean `expo-camera`, `expo-location`, `expo-file-system`, `expo-cryp
 - Node.js compatible con Expo SDK 54.
 - Bun instalado.
 - Expo Go instalado en un dispositivo físico si se desea probar en móvil.
+- Android SDK + emulador o dispositivo Android para E2E.
+- Appium con driver UiAutomator2 instalado para E2E (`bun run appium:drivers` permite comprobarlo).
 
 ### Instalar dependencias
 
@@ -227,7 +275,7 @@ bun run ios
 bun run web
 ```
 
-### Tests, TypeScript y lint
+### Tests, TypeScript, lint y diagnóstico
 
 ```bash
 bun run test:ci
@@ -235,6 +283,33 @@ bun run tsc --noEmit
 bun run lint
 npx expo-doctor
 ```
+
+### E2E Android
+
+Antes de ejecutar E2E, la app Android debe estar compilada/instalada o debe pasarse un APK con `ALISTO_ANDROID_APP`.
+
+Con app instalada:
+
+```bash
+bun run test:e2e:types
+bun run test:e2e:android
+```
+
+Variables útiles:
+
+```bash
+ALISTO_ANDROID_APP_PACKAGE=com.alisto.app
+ALISTO_ANDROID_APP_ACTIVITY=.MainActivity
+ALISTO_ANDROID_DEVICE_NAME="Android Emulator"
+ALISTO_ANDROID_UDID=<udid-opcional>
+ALISTO_ANDROID_APP=<ruta-opcional-al-apk>
+ALISTO_APPIUM_PORT=4723
+WDIO_LOG_LEVEL=info
+```
+
+Si el APK es de desarrollo, Metro debe estar abierto (`bun run start`) para que la app cargue el bundle. Si el APK incluye el bundle de producción, Metro no es necesario.
+
+Los logs de Appium se guardan en `e2e/logs/appium.log`.
 
 ## Verificación requerida
 
@@ -247,7 +322,14 @@ bun run lint
 npx expo-doctor
 ```
 
-Para cambios UI, además iniciar Expo Web o Expo Go, recorrer login/registro/tablero/sync/importación y detener el servidor al terminar.
+Para cambios E2E, además:
+
+```bash
+bun run test:e2e:types
+bun run test:e2e:android
+```
+
+Para cambios UI, iniciar Expo Web o Expo Go, recorrer login/registro/tablero/sync/importación y detener el servidor al terminar.
 
 ## Nota sobre Expo Go
 
