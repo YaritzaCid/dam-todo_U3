@@ -45,3 +45,6 @@ app-example
 /android
 
 coverage/
+
+# E2E test output
+e2e/logs/

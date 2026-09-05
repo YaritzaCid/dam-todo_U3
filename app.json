@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.alisto.app",
       "adaptiveIcon": {
         "backgroundColor": "#EEF3EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

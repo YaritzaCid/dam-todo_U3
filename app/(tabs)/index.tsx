@@ -48,6 +48,9 @@ type ActiveView = 'welcome' | 'todos';
 type Feedback = { tone: 'error' | 'success'; message: string };
 const WEB_PASSWORD_HIDDEN_STYLE =
   Platform.OS === 'web' ? ({ WebkitTextSecurity: 'disc' } as unknown as TextStyle) : undefined;
+const getTodoTestID = (todoId: string, part: string) =>
+  `todo_${todoId.replace(/[^A-Za-z0-9_]/g, '_')}_${part}`;
+
 
 export default function AlistoApp() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -545,11 +548,11 @@ export default function AlistoApp() {
 
   if (isBooting) {
     return (
-      <View style={styles.screen}>
+      <View style={styles.screen} testID="loading_screen">
         <View style={styles.cornerPiece} />
         <View style={styles.floatingPiece} />
-        <View style={styles.loadingPanel}>
-          <ActivityIndicator color="#275C5A" size="large" />
+        <View style={styles.loadingPanel} testID="loading_panel">
+          <ActivityIndicator color="#275C5A" size="large" testID="loading_indicator" />
           <Text style={styles.loadingText}>Preparando tu lista...</Text>
         </View>
       </View>
@@ -559,7 +562,8 @@ export default function AlistoApp() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.select({ ios: 'padding', default: undefined })}
-      style={styles.screen}>
+      style={styles.screen}
+      testID="app_root">
       <View style={styles.cornerPiece} />
       <View style={styles.floatingPiece} />
       <View style={styles.boardGrid}>
@@ -580,7 +584,8 @@ export default function AlistoApp() {
         overScrollMode="always"
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        style={styles.scrollView}>
+        style={styles.scrollView}
+        testID="app_scroll_view">
         {session ? (activeView === 'todos' ? renderTodoBoard(session) : renderWelcomePanel(session)) : renderAuthPanel()}
       </ScrollView>
       {renderCameraModal()}
@@ -592,7 +597,7 @@ export default function AlistoApp() {
     const isRegisterMode = authMode === 'register';
 
     return (
-      <View style={styles.panel}>
+      <View style={styles.panel} testID="auth_panel">
         {renderLogoLockup()}
 
         <View style={styles.copy}>
@@ -618,6 +623,7 @@ export default function AlistoApp() {
                 placeholderTextColor="#7F8A86"
                 returnKeyType="next"
                 style={styles.input}
+                testID="auth_name_input"
                 textContentType="name"
                 value={name}
               />
@@ -638,6 +644,7 @@ export default function AlistoApp() {
               placeholderTextColor="#7F8A86"
               returnKeyType="next"
               style={styles.input}
+              testID="auth_email_input"
               textContentType="emailAddress"
               value={email}
             />
@@ -659,6 +666,7 @@ export default function AlistoApp() {
                   styles.passwordInput,
                   !isPasswordVisible && WEB_PASSWORD_HIDDEN_STYLE,
                 ]}
+                testID="auth_password_input"
                 value={password}
               />
               {renderPasswordToggle()}
@@ -677,6 +685,7 @@ export default function AlistoApp() {
                 returnKeyType="done"
                 secureTextEntry={Platform.OS !== 'web' && !isPasswordVisible}
                 style={[styles.input, !isPasswordVisible && WEB_PASSWORD_HIDDEN_STYLE]}
+                testID="auth_confirm_password_input"
                 value={confirmPassword}
               />
             </View>
@@ -691,7 +700,8 @@ export default function AlistoApp() {
               styles.button,
               pressed && styles.buttonPressed,
               isBusy && styles.disabledControl,
-            ]}>
+            ]}
+            testID={isRegisterMode ? 'auth_create_account_button' : 'auth_login_button'}>
             <Text style={styles.buttonText}>{isRegisterMode ? 'Crear cuenta' : 'Entrar a Alisto'}</Text>
           </Pressable>
 
@@ -703,7 +713,8 @@ export default function AlistoApp() {
               styles.registerOption,
               pressed && styles.registerOptionPressed,
               isBusy && styles.disabledControl,
-            ]}>
+            ]}
+            testID={isRegisterMode ? 'auth_switch_to_login_button' : 'auth_switch_to_register_button'}>
             <View style={styles.registerPiece} />
             <View style={styles.registerCopy}>
               <Text style={styles.registerQuestion}>
@@ -731,23 +742,23 @@ export default function AlistoApp() {
         : `${pendingTodos.length} tareas pendientes y ${completedTodos.length} completadas.`;
 
     return (
-      <View style={[styles.panel, styles.welcomePanel]}>
+      <View style={[styles.panel, styles.welcomePanel]} testID="welcome_panel">
         {renderLogoLockup()}
 
         <View style={styles.welcomeHero}>
           <View style={styles.copy}>
             <Text style={styles.eyebrow}>Resumen del día</Text>
-            <Text style={styles.title}>Bienvenido, {activeSession.name}</Text>
-            <Text style={styles.subtitle}>{summaryText}</Text>
+            <Text style={styles.title} testID="welcome_title">Bienvenido, {activeSession.name}</Text>
+            <Text style={styles.subtitle} testID="welcome_summary_text">{summaryText}</Text>
           </View>
 
-          <View style={styles.summaryMosaic} accessibilityLabel="Resumen de tareas">
-            <View style={[styles.summaryPiece, styles.summaryPiecePending]}>
-              <Text style={styles.summaryNumber}>{pendingTodos.length}</Text>
+          <View style={styles.summaryMosaic} accessibilityLabel="Resumen de tareas" testID="welcome_summary_mosaic">
+            <View style={[styles.summaryPiece, styles.summaryPiecePending]} testID="welcome_pending_summary_card">
+              <Text style={styles.summaryNumber} testID="welcome_pending_count">{pendingTodos.length}</Text>
               <Text style={styles.summaryLabel}>Tareas pendientes</Text>
             </View>
-            <View style={[styles.summaryPiece, styles.summaryPieceCompleted]}>
-              <Text style={styles.summaryNumber}>{completedTodos.length}</Text>
+            <View style={[styles.summaryPiece, styles.summaryPieceCompleted]} testID="welcome_completed_summary_card">
+              <Text style={styles.summaryNumber} testID="welcome_completed_count">{completedTodos.length}</Text>
               <Text style={styles.summaryLabel}>Completadas</Text>
             </View>
           </View>
@@ -757,7 +768,7 @@ export default function AlistoApp() {
           <View style={styles.summaryColumn}>
             <Text style={styles.summaryColumnTitle}>Tareas por hacer</Text>
             {pendingTodos.length === 0 ? (
-              <Text style={styles.summaryEmptyText}>No quedan tareas pendientes.</Text>
+              <Text style={styles.summaryEmptyText} testID="welcome_pending_empty_text">No quedan tareas pendientes.</Text>
             ) : (
               <ScrollView
                 decelerationRate="normal"
@@ -767,9 +778,10 @@ export default function AlistoApp() {
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator
                 style={styles.summaryTaskList}
+                testID="welcome_pending_todo_list"
                 contentContainerStyle={styles.summaryTaskListContent}>
                 {pendingTodos.map((todo) => (
-                  <Text key={todo.id} style={styles.summaryTaskText}>• {todo.title}</Text>
+                  <Text key={todo.id} style={styles.summaryTaskText} testID={getTodoTestID(todo.id, 'pending_summary_text')}>• {todo.title}</Text>
                 ))}
               </ScrollView>
             )}
@@ -778,7 +790,7 @@ export default function AlistoApp() {
           <View style={styles.summaryColumn}>
             <Text style={styles.summaryColumnTitle}>Tareas completadas</Text>
             {completedTodos.length === 0 ? (
-              <Text style={styles.summaryEmptyText}>Completa una tarea para verla aquí.</Text>
+              <Text style={styles.summaryEmptyText} testID="welcome_completed_empty_text">Completa una tarea para verla aquí.</Text>
             ) : (
               <ScrollView
                 decelerationRate="normal"
@@ -788,9 +800,10 @@ export default function AlistoApp() {
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator
                 style={styles.summaryTaskList}
+                testID="welcome_completed_todo_list"
                 contentContainerStyle={styles.summaryTaskListContent}>
                 {completedTodos.map((todo) => (
-                  <Text key={todo.id} style={styles.summaryTaskText}>• {todo.title}</Text>
+                  <Text key={todo.id} style={styles.summaryTaskText} testID={getTodoTestID(todo.id, 'completed_summary_text')}>• {todo.title}</Text>
                 ))}
               </ScrollView>
             )}
@@ -809,7 +822,8 @@ export default function AlistoApp() {
               styles.welcomePrimaryButton,
               pressed && styles.buttonPressed,
               isBusy && styles.disabledControl,
-            ]}>
+            ]}
+            testID="welcome_open_todos_button">
             <Text style={styles.buttonText}>Ver/crear tarea</Text>
           </Pressable>
           <Pressable
@@ -821,7 +835,8 @@ export default function AlistoApp() {
               styles.logoutButton,
               pressed && styles.logoutButtonPressed,
               isBusy && styles.disabledControl,
-            ]}>
+            ]}
+            testID="welcome_logout_button">
             <Text style={styles.logoutText}>Cerrar sesión</Text>
           </Pressable>
         </View>
@@ -831,14 +846,14 @@ export default function AlistoApp() {
 
   function renderTodoBoard(activeSession: UserSession) {
     return (
-      <View style={[styles.panel, styles.boardPanel]}>
+      <View style={[styles.panel, styles.boardPanel]} testID="todo_board_panel">
         {renderLogoLockup()}
 
         <View style={styles.boardHeader}>
           <View style={styles.copy}>
             <Text style={styles.eyebrow}>Lista de tareas</Text>
-            <Text style={styles.title}>Hola, {activeSession.name}</Text>
-            <Text style={styles.subtitle}>Tus tareas están guardadas en este dispositivo.</Text>
+            <Text style={styles.title} testID="todo_board_title">Hola, {activeSession.name}</Text>
+            <Text style={styles.subtitle} testID="todo_board_subtitle">Tus tareas están guardadas en este dispositivo.</Text>
           </View>
           <View style={styles.headerActions}>
             <Pressable
@@ -850,7 +865,8 @@ export default function AlistoApp() {
                 styles.logoutButton,
                 pressed && styles.logoutButtonPressed,
                 isBusy && styles.disabledControl,
-              ]}>
+              ]}
+              testID="todo_board_summary_button">
               <Text style={styles.logoutText}>Resumen</Text>
             </Pressable>
             <Pressable
@@ -862,13 +878,14 @@ export default function AlistoApp() {
                 styles.logoutButton,
                 pressed && styles.logoutButtonPressed,
                 isBusy && styles.disabledControl,
-              ]}>
+              ]}
+              testID="todo_board_logout_button">
               <Text style={styles.logoutText}>Cerrar sesión</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.todoComposer}>
+        <View style={styles.todoComposer} testID="todo_composer">
           <Text style={styles.label}>Nueva tarea</Text>
           <View style={styles.todoInputRow}>
             <TextInput
@@ -880,6 +897,7 @@ export default function AlistoApp() {
               placeholderTextColor="#7F8A86"
               returnKeyType="done"
               style={[styles.input, styles.todoInput]}
+              testID="todo_new_title_input"
               value={newTodoTitle}
             />
             <Pressable
@@ -891,13 +909,14 @@ export default function AlistoApp() {
                 styles.addButton,
                 pressed && styles.buttonPressed,
                 isBusy && styles.disabledControl,
-              ]}>
+              ]}
+              testID="todo_add_button">
               <Text style={styles.buttonText}>Añadir tarea</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.remotePanel}>
+        <View style={styles.remotePanel} testID="remote_api_panel">
           <View style={styles.remoteCopy}>
             <Text style={styles.remoteTitle}>Integración API</Text>
             <Text style={styles.remoteText}>
@@ -914,8 +933,9 @@ export default function AlistoApp() {
                 styles.syncButton,
                 pressed && styles.actionButtonPressed,
                 isBusy && styles.disabledControl,
-              ]}>
-              <Text style={styles.syncButtonText}>
+              ]}
+              testID="remote_sync_button">
+              <Text style={styles.syncButtonText} testID="remote_sync_button_text">
                 {remoteAction === 'sync' ? 'Sincronizando...' : 'Sincronizar API'}
               </Text>
             </Pressable>
@@ -928,8 +948,9 @@ export default function AlistoApp() {
                 styles.importButton,
                 pressed && styles.actionButtonPressed,
                 isBusy && styles.disabledControl,
-              ]}>
-              <Text style={styles.importButtonText}>
+              ]}
+              testID="remote_import_button">
+              <Text style={styles.importButtonText} testID="remote_import_button_text">
                 {remoteAction === 'import' ? 'Importando...' : 'Importar JSONPlaceholder'}
               </Text>
             </Pressable>
@@ -938,12 +959,12 @@ export default function AlistoApp() {
 
         {renderFeedback()}
 
-        <View style={styles.todoList}>
+        <View style={styles.todoList} testID="todo_list">
           {todos.length === 0 ? (
-            <View style={styles.emptyState}>
+            <View style={styles.emptyState} testID="todo_empty_state">
               <View style={styles.emptyPiece} />
-              <Text style={styles.emptyTitle}>Tu lista está en blanco.</Text>
-              <Text style={styles.emptyText}>Añade la primera tarea para verla aquí.</Text>
+              <Text style={styles.emptyTitle} testID="todo_empty_title">Tu lista está en blanco.</Text>
+              <Text style={styles.emptyText} testID="todo_empty_text">Añade la primera tarea para verla aquí.</Text>
             </View>
           ) : (
             todos.map((todo) => renderTodoItem(todo))
@@ -957,7 +978,7 @@ export default function AlistoApp() {
     const isEditing = editingTodoId === todo.id;
 
     return (
-      <View key={todo.id} style={[styles.todoCard, todo.completed && styles.todoCardCompleted]}>
+      <View key={todo.id} style={[styles.todoCard, todo.completed && styles.todoCardCompleted]} testID={getTodoTestID(todo.id, 'card')}>
         <Pressable
           accessibilityLabel={`${todo.completed ? 'Marcar como pendiente' : 'Completar'} ${todo.title}`}
           accessibilityRole="checkbox"
@@ -968,7 +989,8 @@ export default function AlistoApp() {
             styles.todoCheck,
             todo.completed && styles.todoCheckCompleted,
             pressed && styles.todoCheckPressed,
-          ]}>
+          ]}
+          testID={getTodoTestID(todo.id, 'toggle_checkbox')}>
           {todo.completed ? <MaterialIcons color="#FFF9EC" name="check" size={18} /> : null}
         </Pressable>
 
@@ -982,14 +1004,15 @@ export default function AlistoApp() {
               placeholder="Nombre de la tarea"
               placeholderTextColor="#7F8A86"
               style={[styles.input, styles.editInput]}
+              testID={getTodoTestID(todo.id, 'edit_title_input')}
               value={editingTitle}
             />
           ) : (
-            <Text style={[styles.todoTitle, todo.completed && styles.todoTitleCompleted]}>{todo.title}</Text>
+            <Text style={[styles.todoTitle, todo.completed && styles.todoTitleCompleted]} testID={getTodoTestID(todo.id, 'title_text')}>{todo.title}</Text>
           )}
-          <Text style={styles.todoMeta}>{todo.completed ? 'Completada' : 'Pendiente'}</Text>
+          <Text style={styles.todoMeta} testID={getTodoTestID(todo.id, 'status_text')}>{todo.completed ? 'Completada' : 'Pendiente'}</Text>
           {todo.locationLatitude !== null && todo.locationLongitude !== null ? (
-            <Text style={styles.todoCoordinates}>
+            <Text style={styles.todoCoordinates} testID={getTodoTestID(todo.id, 'coordinates_text')}>
               Latitud {todo.locationLatitude.toFixed(6)} · Longitud {todo.locationLongitude.toFixed(6)}
             </Text>
           ) : null}
@@ -998,6 +1021,7 @@ export default function AlistoApp() {
               accessibilityLabel={`Foto de ${todo.title}`}
               source={{ uri: todo.photoUri }}
               style={styles.todoPhoto}
+              testID={getTodoTestID(todo.id, 'photo_image')}
             />
           ) : null}
         </View>
@@ -1009,14 +1033,16 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isBusy}
                 onPress={() => handleSaveTodoTitle(todo)}
-                style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+                testID={getTodoTestID(todo.id, 'save_edit_button')}>
                 <Text style={styles.actionText}>Guardar</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 disabled={isBusy}
                 onPress={cancelEditingTodo}
-                style={({ pressed }) => [styles.ghostActionButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.ghostActionButton, pressed && styles.actionButtonPressed]}
+                testID={getTodoTestID(todo.id, 'cancel_edit_button')}>
                 <Text style={styles.ghostActionText}>Cancelar</Text>
               </Pressable>
             </>
@@ -1027,7 +1053,8 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isBusy || isTakingPhoto}
                 onPress={() => openCameraForTodo(todo)}
-                style={({ pressed }) => [styles.photoActionButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.photoActionButton, pressed && styles.actionButtonPressed]}
+                testID={getTodoTestID(todo.id, 'photo_button')}>
                 <Text style={styles.photoActionText}>{todo.photoUri ? 'Cambiar foto' : 'Añadir foto'}</Text>
               </Pressable>
               <Pressable
@@ -1035,8 +1062,9 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isBusy}
                 onPress={() => handleSetTodoLocation(todo)}
-                style={({ pressed }) => [styles.locationActionButton, pressed && styles.actionButtonPressed]}>
-                <Text style={styles.locationActionText}>
+                style={({ pressed }) => [styles.locationActionButton, pressed && styles.actionButtonPressed]}
+                testID={getTodoTestID(todo.id, 'location_button')}>
+                <Text style={styles.locationActionText} testID={getTodoTestID(todo.id, 'location_button_text')}>
                   {isLocatingTodoId === todo.id
                     ? 'Ubicando...'
                     : todo.locationLatitude !== null
@@ -1049,7 +1077,8 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isBusy}
                 onPress={() => startEditingTodo(todo)}
-                style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+                testID={getTodoTestID(todo.id, 'edit_button')}>
                 <Text style={styles.actionText}>Editar</Text>
               </Pressable>
               <Pressable
@@ -1057,7 +1086,8 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isBusy}
                 onPress={() => handleDeleteTodo(todo)}
-                style={({ pressed }) => [styles.deleteButton, pressed && styles.deleteButtonPressed]}>
+                style={({ pressed }) => [styles.deleteButton, pressed && styles.deleteButtonPressed]}
+                testID={getTodoTestID(todo.id, 'delete_button')}>
                 <Text style={styles.deleteText}>Eliminar</Text>
               </Pressable>
             </>
@@ -1074,10 +1104,10 @@ export default function AlistoApp() {
 
     return (
       <Modal animationType="fade" onRequestClose={cancelDeleteTodo} transparent visible>
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmPanel}>
-            <Text style={styles.confirmTitle}>Eliminar tarea</Text>
-            <Text style={styles.confirmText}>
+        <View style={styles.confirmOverlay} testID="delete_todo_modal_overlay">
+          <View style={styles.confirmPanel} testID="delete_todo_modal">
+            <Text style={styles.confirmTitle} testID="delete_todo_modal_title">Eliminar tarea</Text>
+            <Text style={styles.confirmText} testID="delete_todo_modal_message">
               {`¿Quieres eliminar "${todoPendingDeletion.title}"? Esta acción no se puede deshacer.`}
             </Text>
             <View style={styles.confirmActions}>
@@ -1090,7 +1120,8 @@ export default function AlistoApp() {
                   styles.confirmCancelButton,
                   pressed && styles.actionButtonPressed,
                   isBusy && styles.disabledControl,
-                ]}>
+                ]}
+                testID="delete_todo_cancel_button">
                 <Text style={styles.confirmCancelText}>Cancelar</Text>
               </Pressable>
               <Pressable
@@ -1102,7 +1133,8 @@ export default function AlistoApp() {
                   styles.confirmDeleteButton,
                   pressed && styles.deleteButtonPressed,
                   isBusy && styles.disabledControl,
-                ]}>
+                ]}
+                testID="delete_todo_confirm_button">
                 <Text style={styles.deleteText}>Eliminar</Text>
               </Pressable>
             </View>
@@ -1115,8 +1147,8 @@ export default function AlistoApp() {
   function renderCameraModal() {
     return (
       <Modal animationType="slide" onRequestClose={closeCamera} transparent visible={isCameraOpen}>
-        <View style={styles.cameraOverlay}>
-          <View style={styles.cameraPanel}>
+        <View style={styles.cameraOverlay} testID="camera_modal_overlay">
+          <View style={styles.cameraPanel} testID="camera_modal">
             {cameraPermission?.granted ? (
               <CameraView
                 ref={cameraRef}
@@ -1124,11 +1156,12 @@ export default function AlistoApp() {
                 mode="picture"
                 onCameraReady={() => setIsCameraReady(true)}
                 style={styles.cameraPreview}
+                testID="camera_preview"
               />
             ) : (
-              <View style={styles.cameraPermissionPanel}>
-                <Text style={styles.cameraPermissionTitle}>Falta permiso de cámara</Text>
-                <Text style={styles.cameraPermissionText}>
+              <View style={styles.cameraPermissionPanel} testID="camera_permission_panel">
+                <Text style={styles.cameraPermissionTitle} testID="camera_permission_title">Falta permiso de cámara</Text>
+                <Text style={styles.cameraPermissionText} testID="camera_permission_message">
                   Activa la cámara para tomar una foto y guardarla en esta tarea.
                 </Text>
               </View>
@@ -1139,14 +1172,16 @@ export default function AlistoApp() {
                 accessibilityRole="button"
                 disabled={isTakingPhoto}
                 onPress={closeCamera}
-                style={({ pressed }) => [styles.cameraGhostButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.cameraGhostButton, pressed && styles.actionButtonPressed]}
+                testID="camera_cancel_button">
                 <Text style={styles.cameraGhostText}>Cancelar</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 disabled={isTakingPhoto}
                 onPress={toggleCameraFacing}
-                style={({ pressed }) => [styles.cameraGhostButton, pressed && styles.actionButtonPressed]}>
+                style={({ pressed }) => [styles.cameraGhostButton, pressed && styles.actionButtonPressed]}
+                testID="camera_flip_button">
                 <Text style={styles.cameraGhostText}>Girar cámara</Text>
               </Pressable>
               <Pressable
@@ -1157,8 +1192,9 @@ export default function AlistoApp() {
                   styles.cameraCaptureButton,
                   pressed && styles.buttonPressed,
                   (isTakingPhoto || !cameraPermission?.granted || !isCameraReady) && styles.disabledControl,
-                ]}>
-                <Text style={styles.buttonText}>
+                ]}
+                testID="camera_capture_button">
+                <Text style={styles.buttonText} testID="camera_capture_button_text">
                   {isTakingPhoto ? 'Tomando foto...' : isCameraReady ? 'Tomar foto' : 'Preparando cámara...'}
                 </Text>
               </Pressable>
@@ -1194,7 +1230,8 @@ export default function AlistoApp() {
         accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
         accessibilityRole="button"
         onPress={() => setIsPasswordVisible((visible) => !visible)}
-        style={({ pressed }) => [styles.passwordToggle, pressed && styles.passwordTogglePressed]}>
+        style={({ pressed }) => [styles.passwordToggle, pressed && styles.passwordTogglePressed]}
+        testID="auth_password_visibility_toggle">
         <MaterialIcons
           color="#275C5A"
           name={isPasswordVisible ? 'visibility-off' : 'visibility'}
@@ -1210,7 +1247,7 @@ export default function AlistoApp() {
     }
 
     return (
-      <Text style={[styles.status, feedback.tone === 'error' ? styles.statusError : styles.statusSuccess]}>
+      <Text style={[styles.status, feedback.tone === 'error' ? styles.statusError : styles.statusSuccess]} testID="feedback_message">
         {feedback.message}
       </Text>
     );
