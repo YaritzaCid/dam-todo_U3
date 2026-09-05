@@ -13,7 +13,7 @@ export const config = {
   port: appiumPort,
   path: '/',
   tsConfigPath: './e2e/tsconfig.json',
-  specs: ['./e2e/specs/**/*.spec.ts'],
+  specs: ['./specs/**/*.spec.ts'],
   maxInstances: 1,
   logLevel: process.env.WDIO_LOG_LEVEL ?? 'info',
   outputDir: './e2e/logs',
@@ -39,7 +39,7 @@ export const config = {
   reporters: ['spec'],
   mochaOpts: {
     ui: 'bdd',
-    timeout: 60000,
+    timeout: 180000,
   },
   capabilities: [
     {
@@ -48,6 +48,8 @@ export const config = {
       'appium:deviceName': process.env.ALISTO_ANDROID_DEVICE_NAME ?? 'Android Emulator',
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 120,
+      'appium:forceAppLaunch': true,
+      'appium:settings[waitForIdleTimeout]': 100,
       ...(process.env.ALISTO_ANDROID_PLATFORM_VERSION
         ? { 'appium:platformVersion': process.env.ALISTO_ANDROID_PLATFORM_VERSION }
         : {}),

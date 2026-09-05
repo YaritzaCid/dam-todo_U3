@@ -1,4 +1,4 @@
-import { expect } from '@wdio/globals';
+import { browser, expect } from '@wdio/globals';
 
 import { byTestID } from './by';
 
@@ -31,13 +31,18 @@ class LoginPage {
     return byTestID('feedback_message');
   }
 
-  async waitForLoaded() {
-    await expect(await this.panel).toBeDisplayed();
+  async isLoaded() {
+    return (await this.submitButton).isDisplayed().catch(() => false);
   }
 
+  async waitForLoaded() {
+    await (await this.emailInput).waitForDisplayed({ timeout: 15000 });
+    await expect(await this.submitButton).toBeDisplayed();
+  }
   async login(email: string, password: string) {
     await (await this.emailInput).setValue(email);
     await (await this.passwordInput).setValue(password);
+    await browser.hideKeyboard().catch(() => undefined);
     await (await this.submitButton).click();
   }
 }
