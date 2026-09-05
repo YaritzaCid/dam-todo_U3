@@ -64,27 +64,13 @@ async function registerAndLogin(email: string) {
 }
 
 async function openRegistration() {
-  await browser.waitUntil(
-    async () => {
-      if (await RegisterPage.isLoaded()) {
-        return true;
-      }
+  if (await RegisterPage.isLoaded()) {
+    return;
+  }
 
-      const switchToRegisterButton = await LoginPage.switchToRegisterButton;
-      const canOpenRegistration = await switchToRegisterButton.isDisplayed().catch(() => false);
-
-      if (!canOpenRegistration) {
-        return false;
-      }
-
-      await switchToRegisterButton.click();
-      return false;
-    },
-    {
-      timeout: 30000,
-      timeoutMsg: 'Alisto no abrió el formulario de registro',
-    }
-  );
+  await LoginPage.waitForLoaded();
+  await (await LoginPage.switchToRegisterButton).click();
+  await RegisterPage.waitForLoaded();
 }
 
 async function ensureLoggedOut() {

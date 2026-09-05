@@ -32,12 +32,17 @@ class RegisterPage {
   }
 
   async isLoaded() {
-    return (await this.submitButton).isDisplayed().catch(() => false);
+    const hasNameInput = await (await this.nameInput).isExisting().catch(() => false);
+    const hasConfirmPasswordInput = await (await this.confirmPasswordInput)
+      .isExisting()
+      .catch(() => false);
+
+    return hasNameInput && hasConfirmPasswordInput;
   }
 
   async waitForLoaded() {
     await (await this.nameInput).waitForDisplayed({ timeout: 15000 });
-    await expect(await this.submitButton).toBeDisplayed();
+    await expect(await this.confirmPasswordInput).toBeDisplayed();
   }
 
   async register(name: string, email: string, password: string) {
