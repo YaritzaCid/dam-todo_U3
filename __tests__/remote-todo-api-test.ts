@@ -1,6 +1,8 @@
 import {
   fetchJsonPlaceholderTodos,
   fetchRemoteTodos,
+  getRemoteTodoApiUserMessage,
+  RemoteTodoApiError,
 } from '../lib/remote-todo-api';
 
 const remoteUrl = 'https://mockapi.test/todos';
@@ -69,5 +71,25 @@ describe('remote todo api', () => {
       kind: 'invalid-response',
       name: 'RemoteTodoApiError',
     });
+  });
+
+  test('traduce errores remotos a mensajes de usuario', () => {
+    expect(getRemoteTodoApiUserMessage(new Error('unknown'))).toBe('No pudimos sincronizar. Inténtalo de nuevo.');
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('missing-url', 'missing'))).toBe('Falta configurar la URL de la API.');
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('network', 'offline'))).toBe(
+      'No pudimos conectar con la API. Tus tareas locales siguen disponibles.'
+    );
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('timeout', 'timeout'))).toBe(
+      'No pudimos conectar con la API. Tus tareas locales siguen disponibles.'
+    );
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('http', 'server'))).toBe(
+      'La API respondió con error. Inténtalo más tarde.'
+    );
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('invalid-response', 'bad'))).toBe(
+      'La API devolvió datos inválidos.'
+    );
+    expect(getRemoteTodoApiUserMessage(new RemoteTodoApiError('unexpected', 'boom'))).toBe(
+      'No pudimos sincronizar. Inténtalo de nuevo.'
+    );
   });
 });

@@ -9,6 +9,8 @@ jest.mock('expo-location', () => ({
 
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 
+import * as Location from 'expo-location';
+
 import { getTodoLocationFix } from '../lib/todo-location';
 
 const validLocation = { coords: { latitude: 40.4168, longitude: -3.7038 } };
@@ -24,6 +26,18 @@ describe('todo location helper', () => {
   beforeEach(() => {
     mockGetCurrentPositionAsync.mockReset();
     mockGetLastKnownPositionAsync.mockReset();
+    Object.defineProperty(Location, 'Accuracy', {
+      configurable: true,
+      value: { High: 6, Balanced: 3 },
+    });
+    Object.defineProperty(Location, 'getCurrentPositionAsync', {
+      configurable: true,
+      value: mockGetCurrentPositionAsync,
+    });
+    Object.defineProperty(Location, 'getLastKnownPositionAsync', {
+      configurable: true,
+      value: mockGetLastKnownPositionAsync,
+    });
   });
 
   test('devuelve ubicación válida actual', async () => {
@@ -32,6 +46,13 @@ describe('todo location helper', () => {
     await expect(getTodoLocationFix(locationApi, 'ios')).resolves.toEqual({ location: validLocation, source: 'current' });
     expect(mockGetCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 3 });
     expect(mockGetLastKnownPositionAsync).not.toHaveBeenCalled();
+  });
+
+  test('usa expo-location y plataforma por defecto', async () => {
+    mockGetCurrentPositionAsync.mockResolvedValue(validLocation);
+
+    await expect(getTodoLocationFix()).resolves.toEqual({ location: validLocation, source: 'current' });
+    expect(mockGetCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 3 });
   });
 
   test('usa última ubicación conocida como fallback', async () => {
